@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <style>
+         body {
+         margin: 0;
+         padding: 0;
+         }
+         h2,
+         h3 {
+         margin: 10px;
+         font-size: 18px;
+         }
+         h3 {
+         font-size: 16px;
+         }
+         p {
+         margin: 10px;
+         }
+         #map {
+         position: absolute;
+         top: 0;
+         bottom: 0;
+         width: 100%;
+         }
+         .map-overlay {
+         position: relative;
+         bottom: 0;
+         right: 0;
+         background: rgb(46, 66, 66);
+         color:rgb(199, 204, 215);
+         font-family: Arial, sans-serif;
+         overflow: auto;
+         border-radius: 5px;
+         padding-left: 8px;
+         width: 250px;
+         margin-top: 5px;
+         margin-left: 8px;
+         }
+         #features {
+         top: 0;
+         height: 100px;
+         margin-top: 20px;
+         width: 250px;
+         }
+         #popup {
+         font-family: Arial, sans-serif;
+         font-size: small;
+         color: rgb(46, 66, 66);
+         }
+         #popup_block {
+         border-color: antiquewhite;
+         border-width: 500pc;
+         }
+      </style>
+      <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+      <link
+         href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css"
+         rel="stylesheet"
+         />
+   </head>
+   <body>
+      <div id="map"></div>
+      <div class="map-overlay" id="popup_block">
+         <h2>Libraries in Massachusetts</h2>
+         <div id="pd">
+            <p>Click on a library to learn more!</p>
+         </div>
+      </div>
+      <script>
+         mapboxgl.accessToken = 'pk.eyJ1Ijoic2hhbG9jaXJhcHRvcjgiLCJhIjoiY205aXh3cHhkMDdkdTJrcG9lZ2QxcGthMyJ9.zBoJlddan54QInd5kUtewA';
+         const map = new mapboxgl.Map({
+         container: 'map', 
+         style: 'mapbox://styles/shalociraptor8/cm9nj5uwj00di01rz3rwya70t', 
+         center: {lat: 42.2, lng: -71.820}, 
+         zoom: 7.5,
+         keyboard: true
+         });
+         
+         map.on('click', (event) => {
+            const features = map.queryRenderedFeatures(event.point, {
+           layers: ['massachusetts-public-librarie-b0xcph'] 
+         });
+         if (!features.length) {
+           return;
+         }
+         const feature = features[0];
+         
+         const popup = new mapboxgl.Popup({ offset: [0, -15] })
+         .setLngLat(feature.geometry.coordinates)
+         .setHTML(
+         `<h3 id = 'popup'>${feature.properties.NAME}</h3><p id = 'popup'>${feature.properties.TYPE} LIBRARY <br> ${feature.properties.ADDRESS} ${feature.properties.TOWN}, ${feature.properties.STATE} ${feature.properties.ZIP} </p>
+         <p id = 'popup'> <a href = "`+ feature.properties.WEBSITE + `" target="_blank"> ${feature.properties.WEBSITE} </a></p>`)
+         .addTo(map);
+         });
+         
+         map.addControl(
+         new mapboxgl.GeolocateControl({
+            positionOptions: {
+                enableHighAccuracy: true
+            },
+            trackUserLocation: false,
+            showUserHeading: true
+         }));
+      </script>
+   </body>
+</html>
