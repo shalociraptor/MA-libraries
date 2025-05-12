@@ -1,6 +1,14 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
    <head>
+      <meta charset="utf-8" />
+      <title>MA Libraries by Walkability </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+      <link
+         href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css"
+         rel="stylesheet"
+         />
       <style>
          body {
          margin: 0;
@@ -17,13 +25,23 @@
          p {
          margin: 10px;
          }
+         .map-overlay {
+         position: absolute;
+         bottom: 0;
+         right: 0;
+         background: #fff;
+         margin-right: 20px;
+         font-family: Arial, sans-serif;
+         overflow: auto;
+         border-radius: 3px;
+         }
          #map {
          position: absolute;
          top: 0;
          bottom: 0;
          width: 100%;
          }
-         .map-overlay {
+         #features {
          position: relative;
          bottom: 0;
          right: 0;
@@ -35,13 +53,34 @@
          padding-left: 8px;
          width: 250px;
          margin-top: 5px;
-         margin-left: 8px;
-         }
-         #features {
-         top: 0;
+         margin-left: 20px;
          height: 100px;
          margin-top: 20px;
          width: 250px;
+         font-size: small;
+         }
+         #legend {
+         padding: 10px;
+         box-shadow: 0 1px 2px rgb(0 0 0 / 10%);
+         line-height: 18px;
+         height: 200px;
+         margin-bottom: 40px;
+         width: 115px;
+         background-color: rgb(63, 91, 91);
+         color:rgb(199, 204, 215);
+         font-family: Arial, sans-serif;
+         font-size: small;
+         border-color: rgb(253, 253, 253);
+         border-width: 100px;
+         border-radius: 20px;
+         }
+         .legend-key {
+         display: inline-block;
+         border-radius: 20%;
+         width: 10px;
+         height: 10px;
+         margin-right: 5px;
+         margin-left: 5px;
          }
          #popup {
          font-family: Arial, sans-serif;
@@ -52,56 +91,92 @@
          border-color: antiquewhite;
          border-width: 500pc;
          }
+         .mapboxgl-popup {
+         background: rgb(26, 25, 25);
+         }
       </style>
-      <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
-      <link
-         href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css"
-         rel="stylesheet"
-         />
    </head>
    <body>
       <div id="map"></div>
-      <div class="map-overlay" id="popup_block">
-         <h2>Libraries in Massachusetts</h2>
+      <div class="map-overlay" id="features">
+         <h2>MA Libraries by Walkability</h2>
          <div id="pd">
-            <p>Click on a library to learn more!</p>
+            <p>Click on a library or zoom in to see walkability index information!</p>
          </div>
+      </div>
+      <div class="map-overlay" id="legend">
+         <h2>
+            <center> Walkability Index  </center>
+         </h2>
       </div>
       <script>
          mapboxgl.accessToken = 'pk.eyJ1Ijoic2hhbG9jaXJhcHRvcjgiLCJhIjoiY205aXh3cHhkMDdkdTJrcG9lZ2QxcGthMyJ9.zBoJlddan54QInd5kUtewA';
+         
          const map = new mapboxgl.Map({
-         container: 'map', 
-         style: 'mapbox://styles/shalociraptor8/cm9nj5uwj00di01rz3rwya70t', 
-         center: {lat: 42.2, lng: -71.820}, 
-         zoom: 7.5,
-         keyboard: true
+           container: 'map', 
+           style: 'mapbox://styles/shalociraptor8/cm9nj5uwj00di01rz3rwya70t', 
+           center: {lat: 42.2, lng: -71.820}, 
+           zoom: 7.5,
+           keyboard: true
          });
          
-         map.on('click', (event) => {
-            const features = map.queryRenderedFeatures(event.point, {
-           layers: ['massachusetts-public-librarie-b0xcph'] 
-         });
-         if (!features.length) {
-           return;
-         }
-         const feature = features[0];
+         map.on('load', () => {
+           map.getCanvas().style.cursor = 'default';
          
-         const popup = new mapboxgl.Popup({ offset: [0, -15] })
-         .setLngLat(feature.geometry.coordinates)
-         .setHTML(
-         `<h3 id = 'popup'>${feature.properties.NAME}</h3><p id = 'popup'>${feature.properties.TYPE} LIBRARY <br> ${feature.properties.ADDRESS} ${feature.properties.TOWN}, ${feature.properties.STATE} ${feature.properties.ZIP} </p>
-         <p id = 'popup'> <a href = "`+ feature.properties.WEBSITE + `" target="_blank"> ${feature.properties.WEBSITE} </a></p>`)
-         .addTo(map);
-         });
+           const layers = [
+             '14-16+', 
+             '12-14+',
+             '10-12+',
+             '8-10+',
+             '6-8+',
+             '4-6+',
+             '2-4+',
+             '0-2+',
+           ];
+           const colors = [
+             '#406EC3',
+             '#467CD2', 
+             '#406EC3',
+             '#3A60B5',
+             '#2D4398',
+             '#273589',
+             '#21277B',
+             '#1B196C'
+           ];
          
-         map.addControl(
-         new mapboxgl.GeolocateControl({
-            positionOptions: {
-                enableHighAccuracy: true
-            },
-            trackUserLocation: false,
-            showUserHeading: true
-         }));
+           const legend = document.getElementById('legend');
+         
+           layers.forEach((layer, i) => {
+             const color = colors[i];
+             const item = document.createElement('div');
+             const key = document.createElement('span');
+             key.className = 'legend-key';
+             key.style.backgroundColor = color;
+         
+             const value = document.createElement('span');
+             value.innerHTML = `${layer}`;
+             item.appendChild(key);
+             item.appendChild(value);
+             legend.appendChild(item);
+           });
+         });
+           
+           map.on('click', (event) => {
+               const features = map.queryRenderedFeatures(event.point, {
+              layers: ['massachusetts-public-librarie-b0xcph'] 
+            });
+            if (!features.length) {
+              return;
+            }
+            const feature = features[0];
+            const popup = new mapboxgl.Popup({ offset: [0, -15], classname: "mapboxgl-popup"})
+         
+            .setLngLat(feature.geometry.coordinates)
+            .setHTML(
+            `<div id="popup"> </div> <h3 id = 'popup'>${feature.properties.NAME}</h3><p id = 'popup'>${feature.properties.TYPE} LIBRARY <br> ${feature.properties.ADDRESS} ${feature.properties.TOWN}, ${feature.properties.STATE} ${feature.properties.ZIP} </p>
+            <p id = 'popup'> <a href = "`+ feature.properties.WEBSITE + `" target="_blank"> ${feature.properties.WEBSITE} </a></p>`)
+            .addTo(map);
+            });
       </script>
    </body>
 </html>
